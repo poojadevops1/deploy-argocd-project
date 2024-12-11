@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-deployment
+  labels:
+    app: argocd-deployment
+spec:
+  replicas: 3  # Number of Nginx instances (pods) to run
+  selector:
+    matchLabels:
+      app: argocd-deployment
+  template:
+    metadata:
+      labels:
+        app: argocd-deployment
+    spec:
+      containers:
+        - name: argocd-deployment
+          image: ${{ secrets.DOCKERHUB_USERNAME }}/my-argocd-deployment-image:${{ github.run_id }}  # Docker image from Docker Hub
+          ports:
+            - containerPort: 80
