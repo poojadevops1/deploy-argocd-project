@@ -1,16 +1,17 @@
-name: Build and Deploy Nginx Docker Container
+name: Build, Push Docker Image, and Send Notification
 
 on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'README.md'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Set up Docker Buildx
@@ -22,54 +23,36 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image
+      - name: Build and Push Docker image
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/my-argocd-deployment-image:${{ github.run_id }}
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Deploy Nginx container to server
-        env:
-          DOCKER_HOST: ${{ secrets.DOCKER_HOST }}
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SERVER_IP }} <<EOF
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/my-argocd-deployment-image:${{ github.run_id }}
-            docker stop nginx-container || true
-            docker rm nginx-container || true
-            docker run -d --name nginx-container -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/my-argocd-deployment-image:${{ github.run_id }}
-          EOF
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/my-docker-image:${{ github.run_id }}
 
   notify:
     runs-on: ubuntu-latest
-    needs: [build, deploy]  # Ensure this job runs after both build and deploy jobs
-    if: always()  # Run this job regardless of the outcome of other jobs
-
+    needs: build
+    if: success()  # Only run this job if the previous job was successful
     steps:
       - name: Send notification email
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.gmail.com  # SMTP server for Gmail
+          server_address: smtp.gmail.com  # Change this to your SMTP server
           server_port: 465
-          username: ${{ secrets.EMAIL }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: GitHub Actions CI/CD Pipeline - ${{ github.workflow }} - ${{ job.status }}
-          to: ${{ secrets.EMAIL }}
+          username: ${{ secrets.EMAIL }}  # Your email
+          password: ${{ secrets.SMTP_PASSWORD }}  # Your SMTP password
+          subject: GitHub Actions CI/CD Pipeline - Build and Push Success
+          to: ${{ secrets.NOTIFY_EMAIL }}  # Email to send notification to
           from: GitHub Actions <${{ secrets.EMAIL }}>
           body: |
             CI/CD Pipeline Summary for ${{ github.repository }}:
 
-            Build Status: ${{ needs.build.result }}
-            Docker Build & Push Status: ${{ needs.build.result }}
-            Deploy Status: ${{ needs.deploy.result }}
+            Build and Push Status: Success
+
+            Docker Image Tag: ${{ secrets.DOCKERHUB_USERNAME }}/my-docker-image:${{ github.run_id }}
+
+            For more details, check the [GitHub Actions log](${{
+              github.server_url
+            }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
