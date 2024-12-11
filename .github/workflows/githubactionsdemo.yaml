@@ -45,7 +45,7 @@ jobs:
         password: ${{ secrets.SMTP_PASSWORD }}  # Your SMTP password
         subject: GitHub Actions CI/CD Pipeline - Build and Push Success
         from: GitHub Actions <${{ secrets.EMAIL }}>
-        to: ${{ secrets.NOTIFY_EMAIL }}  # Email to send notification to
+        to: ${{ secrets.NOTIFY_EMAIL }}  
         body: |
           CI/CD Pipeline Summary for ${{ github.repository }}:
 
