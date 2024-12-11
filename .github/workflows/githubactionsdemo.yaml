@@ -45,7 +45,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SERVER_IP }} <<EOF
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/my-docker-deployment-image:${{ github.run_id }}
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/my-argocd-deployment-image:${{ github.run_id }}
             docker stop nginx-container || true
             docker rm nginx-container || true
             docker run -d --name nginx-container -p 80:80 ${{ secrets.DOCKERHUB_USERNAME }}/my-argocd-deployment-image:${{ github.run_id }}
