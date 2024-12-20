@@ -21,8 +21,9 @@ on:
       - main
     paths-ignore:
       - 'README.md'
+```
 
-# Jobs in the Workflow
+### Jobs in the Workflow
 
 ## 1. Build Job (build):
 Checkout repository: The repository code is checked out to make it available for the workflow.
